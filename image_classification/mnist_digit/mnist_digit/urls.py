@@ -20,7 +20,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('mnist/', include('mnist_digit.mnist_api.urls'))
+    path('', include('mnist_digit.mnist_api.urls'))
 ]
 
 if settings.DEBUG:

@@ -1,104 +1,71 @@
-import numpy as np
-import tensorflow as tf
-import tensorflow_datasets as tfds
-# from tf.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
-from tensorflow.keras.preprocessing import image
 import tempfile, os
+import numpy as np
 import matplotlib.pyplot as plt
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.datasets import mnist
+from PIL import Image
+# from sklearn.metrics import confusion_matrix
+# import seaborn as sns
 
 #
 #   MNIST handwritten digits recon
 #
 
 def main():
+    mnist_train()
+
+def mnist_train():
     # Load the data 28x28 imgs
-    mnist_dataset, mnist_info = tfds.load(name='mnist', as_supervised=True, with_info=True)
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-    print(mnist_dataset)
-    print(mnist_info)
+    num_classes = 10
 
-    # for ex in mnist_dataset.take(1):
-    #     print(ex["label"])
+    print(x_train.shape, y_train.shape)
 
-    # for example in ds:  # example is `{'image': tf.Tensor, 'label': tf.Tensor}`
-    #     print(list(example.keys()))
-    #     image = example["image"]
-    #     label = example["label"]
-    #     print(image.shape, label)
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
 
+    # Normalize data
+    x_train = x_train / 255.
+    x_test = x_test / 255.
 
-    # Unpack the data
-    mnist_train, mnist_test = mnist_dataset['train'], mnist_dataset['test']
+    x_train = x_train.reshape(x_train.shape[0], -1)
+    x_test = x_test.reshape(x_test.shape[0], -1)
 
-    num_validation_samples = 0.1 * mnist_info.splits['train'].num_examples
-    num_validation_samples = tf.cast(num_validation_samples, tf.int64)
-    num_test_sample = mnist_info.splits['test'].num_examples
-    num_test_sample = tf.cast(num_test_sample, tf.int64)
+    model = Sequential()
 
-    # Scale image
-    scaled_train_and_validation_data = mnist_train.map(scale)
-    test_data = mnist_test.map(scale)
+    model.add(Dense(units=128, input_shape=(784,), activation='relu'))
+    model.add(Dense(units=128, activation='relu'))
+    model.add(Dropout(0.25))
+    model.add(Dense(units=10, activation='softmax'))
 
-    # Shuffle data
-    BUFFER_SIZE = 10000
-    shuffled_train_and_validation_data = scaled_train_and_validation_data.shuffle(BUFFER_SIZE)
-    validation_data = shuffled_train_and_validation_data.take(num_validation_samples)
-    train_data = shuffled_train_and_validation_data.skip(num_validation_samples)
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    # Batch the datasets
-    BATCH_SIZE = 100
-    train_data = train_data.batch(BATCH_SIZE)
-    validation_data = validation_data.batch(num_validation_samples)
-    test_data = test_data.batch(num_test_sample)
+    # model = keras.models.load_model('./model/1')
 
-    # Define model
-    output_size = 10
-    hidden_layer_size = 50
+    model.summary()
 
-    model = tf.keras.Sequential([tf.keras.layers.Flatten(input_shape = (28, 28, 1)),
-                                tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-                                tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-                                tf.keras.layers.Dense(output_size, activation='softmax')])
+    # Train
+    batch_size = 512
+    epochs = 10
+    model.fit(
+        x=x_train,
+        y=y_train,
+        batch_size=batch_size,
+        epochs=epochs
+    )
 
-    # Compile model
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01, amsgrad=True)
-    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    # Evaluate
+    test_loss, test_acc = model.evaluate(x_test, y_test)
+    print("Test Loss: {}, Test Accuracy: {}".format(test_loss, test_acc))
 
-    # Train the model
-    NUM_EPOCHS = 20
-    BATCH_SIZE = 100
-    EARLY_STOP = tf.keras.callbacks.EarlyStopping(patience=2)
-
-    model.fit(train_data,
-            epochs=NUM_EPOCHS,
-            callbacks=[EARLY_STOP],
-            validation_data=validation_data,
-            verbose=2)
-
-    test_loss, test_accuracy = model.evaluate(test_data)
-
-    print('Test loss: {0:.2f}'.format(test_loss))
-    print('Test accuracy: {0:.2f}'.format(test_accuracy*100.))
-
-    # img_w = img_h = 28
-    # img = tf.keras.preprocessing.image.load_img('./mnist_2.png')
-    # x = tf.keras.preprocessing.image.img_to_array(img)
-    # x = np.expand_dims(x, axis=0)
-    # x /= 255
-
-    # images = np.vstack([x])
-    # classes = model.predict(img)
-    # print(classes)
-    
-    MODEL_DIR = tempfile.gettempdir()
-    print(MODEL_DIR)
     version = 1
     export_path = os.path.join("./model", str(version))
     print('export_path = {}\n'.format(export_path))
     
-
-    tf.keras.models.save_model(
+    keras.models.save_model(
         model,
         export_path,
         overwrite=True,
@@ -108,14 +75,6 @@ def main():
         options=None
     )
 
-    print('\nSaved model:')
-
-
     print("done")
-
-def scale(image, label):
-    image = tf.cast(image, tf.float32)
-    image /= 255.
-    return image, label
 
 main()

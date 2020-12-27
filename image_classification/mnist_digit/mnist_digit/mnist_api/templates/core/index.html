@@ -1,16 +1,31 @@
-<htnl>
-    <body>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="file" name="myfile">
-            <button type="submit">Upload</button>
-        </form>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load static %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.min.js"></script>
+    <link type="text/css" href="{% static 'css/style.css' %}">
+    <meta charset="utf-8" />
 
-        {% if uploaded_file_url %}
-            <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
-            <p>[ RESULT ] => {{ mnist_result }}</p>
-        {% endif %}
+  </head>
+  <body>
 
-        <!-- <p><a>Return to home</a></p> -->
-    </body>
-</htnl>
+    <script type="text/javascript" src="{% static 'js/sketch.js' %}"></script>
+    <button id="clear-btn">Clear</button>
+    <button id="send-btn">Send</button>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <!-- <input type="file" name="myfile">
+        <button type="submit">Upload</button> -->
+    </form>
+
+    <label id="pred-val" style="font-size: 28px">PREDICTED: </label>
+
+
+    <!-- {% if uploaded_file_url %}
+        <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+        <p>[ RESULT ] => {{ mnist_result }}</p>
+    {% endif %} -->
+
+  </body>
+</html>
